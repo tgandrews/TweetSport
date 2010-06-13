@@ -29,7 +29,7 @@ class MatchIncident
 
         if html.include? 'GOAL: '
             @type = IncidentType::GOAL
-        countrySpecificIncidents
+            countrySpecificIncidents
         elsif id.include? '_HalfTime'
             @type = IncidentType::HALF_TIME
         elsif id.include? '_FullTime'
@@ -51,13 +51,17 @@ class MatchIncident
 
     # What country scored/had a player sent off?
     def determineCountry
-        unclean = @value.search("strong[1]").inner_html.strip
-        # Remove the current score - we can calculate this
-        # TODO: Store this for later for validation
-        @country = unclean.gsub(/\d+-/,'')
+        if @type == IncidentType::GOAL
+            # Remove the current score - we can calculate this
+            # TODO: Store this for later for validation
+            unclean = @value.search("strong[1]").inner_html.strip
+            @country = unclean.gsub(/\d+-/,'')
+        elsif @type == IncidentType::SENT_OFF
+            @country = @value.inner_html.split(',')[0].gsub('SENT OFF:','').strip
+        end
     end
 
-    # When did the Incident happen?
+    # When did the incident happen?
     def determineMinutes
         if @type == IncidentType::HALF_TIME
             @minutes = 45
@@ -73,7 +77,11 @@ class MatchIncident
 
     # Who was involved in the incident?
     def determinePerson
-        @person = @value.search("strong[2]").inner_html
+        if @type == IncidentType::GOAL
+            @person = @value.search("strong[2]").inner_html
+        elsif @type == IncidentType::SENT_OFF
+            @person = @value.inner_html.split(',')[1].strip
+        end
     end
 
     # The BBC ID of the match
@@ -90,4 +98,3 @@ class IncidentType
     RESULT    = 'RESULT'
     UNKNOWN   = 'UNKNOWN'
 end
-
